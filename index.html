@@ -1890,14 +1890,14 @@
         // On the VERY FIRST launch this seeds:
         //   - the company display name (so the app shows it with no
         //     onboarding prompt — but it stays editable via Edit Name)
-        //   - 5 company farm(s) into customLocations
+        //   - 6 company farm(s) into customLocations
         // After that the user has full control: rename, edit, delete
         // (soft + permanent), add new farms, receive shared locations —
         // exactly like the generic build. The seed never runs again
         // unless SEED_VERSION is bumped in a future build.
         // ============================================================
         (function seedCompanyLocations() {
-            var SEED_VERSION = '1';
+            var SEED_VERSION = '2';
             var SEED_FLAG_KEY = 'weathernextforkarak__wnext_company_seed_version';
             var CUSTOM_KEY = 'weathernextforkarak__wnext_v41_custom_store';
             var FAV_KEY = 'weathernextforkarak__wnext_v41_favs_store';
@@ -1908,6 +1908,14 @@
                 if (localStorage.getItem(SEED_FLAG_KEY) === SEED_VERSION) {
                     return; // already seeded this version — respect user edits/deletes
                 }
+                // Remember whether ANY earlier seed has run on this device.
+                // null  => brand-new install (first ever launch)
+                // '1'   => device previously ran an older seed (a version bump)
+                // This lets the favourite step below pin every farm on a fresh
+                // install, but only NEW farms on an upgrade — so a user's
+                // unpin choices from a previous version are never overridden.
+                var priorSeed = localStorage.getItem(SEED_FLAG_KEY);
+                var isFirstInstall = (priorSeed === null);
                 // --- seed the company display name (bare name, no suffix) ---
                 // The app appends ' 农友天气' itself wherever the name is shown,
                 // so we store ONLY the bare name here. Seeded only if the user
@@ -1921,7 +1929,8 @@
                     {"id": "c_kk-sungai-dua",       "en": "Kg. Sungai Dua",   "zh": "甘榜双溪都亚", "lat": 3.45972,  "lng": 102.00000,  "t": 0, "p": 0, "em": false},
                     {"id": "c_kk-cinta-manis",      "en": "Kg. Cinta Manis",  "zh": "甘甜新村",     "lat": 3.453000, "lng": 102.031000, "t": 0, "p": 0, "em": false},
                     {"id": "c_kk-troh",             "en": "Kg. Troh",         "zh": "德乐新村",     "lat": 3.41194,  "lng": 102.07889,  "t": 0, "p": 0, "em": false},
-                    {"id": "c_kk-the-valley",       "en": "The Valley",       "zh": "加叻幽谷",     "lat": 3.38389,  "lng": 102.02778,  "t": 0, "p": 0, "em": false}
+                    {"id": "c_kk-the-valley",       "en": "The Valley",       "zh": "加叻幽谷",     "lat": 3.38389,  "lng": 102.02778,  "t": 0, "p": 0, "em": false},
+                    {"id": "c_kk-duri-rin-organic", "en": "100% ORGANIC DURI RIN", "zh": "山本绫有机农场", "lat": 3.4522688264594623, "lng": 101.99607351010962, "t": 0, "p": 0, "em": false}
                 ];
                 // Merge into whatever is already there (e.g. a deep-link
                 // location the user received before first cold start).
@@ -1937,28 +1946,49 @@
                     if (!haveIds[l.id]) existing.push(l);
                 });
                 localStorage.setItem(CUSTOM_KEY, JSON.stringify(existing));
-                // --- name migration -----------------------------------
-                // This is a fresh v1 build, so there is no earlier
-                // auto-seeded name to migrate. The block is kept as a
-                // deliberate no-op so future versions can add migrations
-                // here without restructuring the seed routine.
-                // ----------------------------------------------------------
-                // Auto-favourite the seeded farms so they pin to the top on
-                // first launch (matches the app's behaviour for user-added
-                // farms). Users can unpin freely afterwards.
+                // --- seed v2: add Duri Rin organic farm --------------------
+                // v1 seeded 5 farms; v2 adds a 6th (100% ORGANIC DURI RIN).
+                // The merge above is additive — it only pushes farms whose id
+                // is not already present — so devices that ran v1 keep all
+                // their renamed/edited/deleted farms untouched and simply
+                // gain the new one. No name migration is needed because no
+                // existing farm's name changed between v1 and v2.
+                // -----------------------------------------------------------
+                // Auto-favourite the seeded farms so they pin to the top.
+                //  - First install: pin ALL seeded farms (matches the app's
+                //    behaviour for user-added farms).
+                //  - Version upgrade: pin ONLY farms that were not present in
+                //    any earlier seed, so a user's previous unpin choices on
+                //    older farms are respected. New farms still pin so the
+                //    user notices them.
+                // Either way users can unpin freely afterwards.
                 var favs = [];
                 try {
                     var rawF = localStorage.getItem(FAV_KEY);
                     favs = rawF ? (JSON.parse(rawF) || []) : [];
                     if (!Array.isArray(favs)) favs = [];
                 } catch (e) { favs = []; }
-                var seedIds = [
+                // Farms introduced in each seed version. On an upgrade only
+                // the ids NEW in this version (vs the device's prior version)
+                // are auto-favourited.
+                var SEED_V1_IDS = [
                     "c_kk-borneo-spring",
                     "c_kk-sungai-dua",
                     "c_kk-cinta-manis",
                     "c_kk-troh",
                     "c_kk-the-valley"
                 ];
+                var SEED_V2_NEW_IDS = [
+                    "c_kk-duri-rin-organic"
+                ];
+                var seedIds;
+                if (isFirstInstall) {
+                    // brand-new device: pin every seeded farm
+                    seedIds = SEED_V1_IDS.concat(SEED_V2_NEW_IDS);
+                } else {
+                    // version bump: pin only the farms new in this version
+                    seedIds = SEED_V2_NEW_IDS;
+                }
                 seedIds.forEach(function (id) {
                     if (favs.indexOf(id) === -1) favs.push(id);
                 });

@@ -23,7 +23,7 @@ app. It works offline after the first visit (service-worker cached).
 
 ## Seeded locations
 
-On first launch the app seeds the five farms below. They are auto-favourited
+On first launch the app seeds the six farms below. They are auto-favourited
 and can each be renamed, edited, or deleted freely afterwards. Add as many more
 farms as you like from inside the app.
 
@@ -34,6 +34,7 @@ farms as you like from inside the app.
 | Kg. Cinta Manis | 甘甜新村 | 3.453000, 102.031000 |
 | Kg. Troh | 德乐新村 | 3.41194, 102.07889 |
 | The Valley | 加叻幽谷 | 3.38389, 102.02778 |
+| 100% ORGANIC DURI RIN | 山本绫有机农场 | 3.45226882645946, 101.99607351010962 |
 
 The app also seeds a default user display name (**Karak / 加叻**), which stays
 editable via **Edit Name** in the app.
@@ -95,7 +96,7 @@ The service worker caches the app shell. When you push changes, bump the
 their next visit. The current value is:
 
 ```
-wnext-weathernextforkarak-202605230530
+wnext-weathernextforkarak-202605240615
 ```
 
 ---
