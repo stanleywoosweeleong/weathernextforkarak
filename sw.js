@@ -3,7 +3,7 @@
 // Version 1.0.0 — bump CACHE_VERSION on each release
 // ============================================================
 
-const CACHE_VERSION = 'wnext-weathernextforkarak-202605240615';
+const CACHE_VERSION = 'wnext-weathernextforkarak-202605260700';
 const SHELL_CACHE = `${CACHE_VERSION}-shell`;
 const RUNTIME_CACHE = `${CACHE_VERSION}-runtime`;
 const WEATHER_CACHE = `${CACHE_VERSION}-weather`;
@@ -82,22 +82,27 @@ self.addEventListener('fetch', (event) => {
   // Only handle GET requests
   if (request.method !== 'GET') return;
 
-  // 1. Firebase, Gemini, Google APIs — NEVER cache (auth + real-time)
+  // 1. Firebase, Gemini, Google APIs — do NOT intercept at all.
+  //
+  // This rule used to call event.respondWith() and, on a network failure,
+  // substitute a JSON 503 body. That is harmless for XHR/fetch API calls but
+  // FATAL for the Firebase SDK *module* requests (gstatic.com/firebasejs/...):
+  // the browser tries to execute the JSON as an ES module, which throws and
+  // kills the entire type="module" script — a fully blank page. Because the
+  // SW is already installed, it repeats the poisoning on every subsequent
+  // load, so the app never recovers.
+  //
+  // Fix: return WITHOUT calling event.respondWith(). The browser then fetches
+  // these requests natively. A real network failure becomes an ordinary
+  // rejected fetch / failed module load, which the app's own code already
+  // handles gracefully — instead of poisoned JSON. These requests were never
+  // cached anyway (auth + real-time), so native pass-through loses nothing.
   if (
     url.hostname.includes('firebaseio.com') ||
     url.hostname.includes('googleapis.com') ||
     url.hostname.includes('firebase') ||
     url.hostname.includes('gstatic.com') && url.pathname.includes('firebasejs')
   ) {
-    // Network-only, but allow graceful failure
-    event.respondWith(
-      fetch(request).catch(() => {
-        return new Response(
-          JSON.stringify({ error: 'offline', message: 'Network unavailable' }),
-          { status: 503, headers: { 'Content-Type': 'application/json' } }
-        );
-      })
-    );
     return;
   }
 
