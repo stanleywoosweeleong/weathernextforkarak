@@ -1,9 +1,9 @@
 // ============================================================
 // WeatherNext Service Worker
-// Version 1.0.156 — removed duplicate generic apple-touch-icon SVG fallback (fixed launch icon swapping to sibling app icon). bump CACHE_VERSION on each release
+// Version 1.0.157 — unique manifest id + Karak-specific apple-mobile-web-app-title & application-name (fix iOS conflating install with sibling variant, wrong launch icon). bump CACHE_VERSION on each release
 // ============================================================
 
-const CACHE_VERSION = 'wnext-weathernextforkarak-202606010001';
+const CACHE_VERSION = 'wnext-weathernextforkarak-202606010002';
 const SHELL_CACHE = `${CACHE_VERSION}-shell`;
 const RUNTIME_CACHE = `${CACHE_VERSION}-runtime`;
 const WEATHER_CACHE = `${CACHE_VERSION}-weather`;

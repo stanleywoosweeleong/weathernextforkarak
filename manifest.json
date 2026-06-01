@@ -2,6 +2,7 @@
   "name": "Karak",
   "short_name": "Karak 天气",
   "description": "Karak — farm weather forecast / 个人化农友天气预报",
+  "id": "/weathernextforkarak/",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
