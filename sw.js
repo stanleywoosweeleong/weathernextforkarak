@@ -1,9 +1,18 @@
 // ============================================================
-// WeatherNext Service Worker
-// Version 1.0.158 — boot-screen logo now uses real icon-512.png instead of generic template SVG (THIS was the launch-icon swap; in-page boot overlay, not apple-touch-icon). bump CACHE_VERSION on each release
+// WeatherNext Service Worker — Karak (加叻, Pahang)
+// MIGRATED to the full Raub/Cameron microclimate architecture (was the older
+// 1.0.158 forecast-only build). Carries: microclimate disease-risk engine
+// (6-disease + Phase-2 tiers), fog engine, 29-crop list, coordinate-aware
+// terrain note, broadcast GPS sort, Open-Meteo rate-limit throttling + retry,
+// storm-confidence wording, AI-greeting crop-owner fix, REAL model-run
+// freshness header, AI prompt with per-farm coordinates (keeps Karak name).
+// Boot screen sky-blue (#a0d9f5) to match the orchard-couple icon. Identity:
+// namespace weathernextforkarak, appId wnext-ag-v41-weathernextforkarak, name
+// 加叻, 6 seed farms (c_kk- IDs preserved, incl. 100% ORGANIC DURI RIN),
+// seed version kk-arch1. bump CACHE_VERSION on each release
 // ============================================================
 
-const CACHE_VERSION = 'wnext-weathernextforkarak-202606010003';
+const CACHE_VERSION = 'wnext-weathernextforkarak-202606032220';
 const SHELL_CACHE = `${CACHE_VERSION}-shell`;
 const RUNTIME_CACHE = `${CACHE_VERSION}-runtime`;
 const WEATHER_CACHE = `${CACHE_VERSION}-weather`;
@@ -17,8 +26,8 @@ const SHELL_ASSETS = [
   './icon-512.png',
   './favicon-32.png',
   './apple-touch-icon.png',
-  // External CDN assets — cache so app loads fully offline after first visit
-  'https://cdn.tailwindcss.com',
+  // External CDN assets — cache so app loads fully offline after first visit.
+  // (Tailwind is no longer here — it's now pre-built and inlined in index.html.)
   'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js'
 ];
 
@@ -31,9 +40,9 @@ self.addEventListener('install', (event) => {
     caches.open(SHELL_CACHE)
       .then((cache) => {
         // Use addAll with a fallback per-item to survive a single failure.
-        // Cross-origin CDN assets (cdn.tailwindcss.com, cdnjs) often lack CORS headers
-        // for fetch() pre-caching. Use 'no-cors' mode for them — produces an opaque
-        // response which is cacheable but not introspectable (fine for static assets).
+        // Cross-origin CDN assets (cdnjs) often lack CORS headers for fetch()
+        // pre-caching. Use 'no-cors' mode for them — produces an opaque response
+        // which is cacheable but not introspectable (fine for static assets).
         return Promise.allSettled(
           SHELL_ASSETS.map((url) => {
             const isCrossOrigin = url.startsWith('http') && !url.startsWith(self.location.origin);
@@ -84,24 +93,22 @@ self.addEventListener('fetch', (event) => {
 
   // 1. Firebase, Gemini, Google APIs — do NOT intercept at all.
   //
-  // This rule used to call event.respondWith() and, on a network failure,
-  // substitute a JSON 503 body. That is harmless for XHR/fetch API calls but
-  // FATAL for the Firebase SDK *module* requests (gstatic.com/firebasejs/...):
-  // the browser tries to execute the JSON as an ES module, which throws and
-  // kills the entire type="module" script — a fully blank page. Because the
-  // SW is already installed, it repeats the poisoning on every subsequent
-  // load, so the app never recovers.
+  // This rule used to do event.respondWith(fetch(request).catch(... JSON 503 ...)).
+  // That was a bug: it also caught the Firebase SDK JavaScript module requests
+  // (gstatic.com/firebasejs/...). When such a request failed, the SW handed the
+  // browser a JSON body; the browser then tried to execute JSON as an ES module,
+  // which throws and kills the entire type="module" script — a fully blank page,
+  // repeated on every load because the installed SW kept doing it.
   //
-  // Fix: return WITHOUT calling event.respondWith(). The browser then fetches
-  // these requests natively. A real network failure becomes an ordinary
-  // rejected fetch / failed module load, which the app's own code already
-  // handles gracefully — instead of poisoned JSON. These requests were never
-  // cached anyway (auth + real-time), so native pass-through loses nothing.
+  // Fix: don't substitute anything for these requests. Returning here (with no
+  // event.respondWith) lets the browser fetch them natively. A real network
+  // failure becomes a normal rejected fetch, which the app already handles —
+  // never a poisoned JSON module.
   if (
     url.hostname.includes('firebaseio.com') ||
     url.hostname.includes('googleapis.com') ||
     url.hostname.includes('firebase') ||
-    url.hostname.includes('gstatic.com') && url.pathname.includes('firebasejs')
+    (url.hostname.includes('gstatic.com') && url.pathname.includes('firebasejs'))
   ) {
     return;
   }
@@ -155,7 +162,7 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // 4. CDN scripts (Tailwind, html2canvas) — cache-first (rarely changes).
+  // 4. CDN scripts (html2canvas) — cache-first (rarely changes).
   // Cross-origin CDNs without CORS headers need no-cors mode to be cacheable.
   if (url.hostname.includes('cdnjs.cloudflare.com') || url.hostname.includes('cdn.tailwindcss.com')) {
     event.respondWith(
