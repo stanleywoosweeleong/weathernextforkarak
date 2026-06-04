@@ -12,7 +12,7 @@
 // seed version kk-arch1. bump CACHE_VERSION on each release
 // ============================================================
 
-const CACHE_VERSION = 'wnext-weathernextforkarak-202606032220';
+const CACHE_VERSION = 'wnext-weathernextforkarak-202606041232';
 const SHELL_CACHE = `${CACHE_VERSION}-shell`;
 const RUNTIME_CACHE = `${CACHE_VERSION}-runtime`;
 const WEATHER_CACHE = `${CACHE_VERSION}-weather`;
